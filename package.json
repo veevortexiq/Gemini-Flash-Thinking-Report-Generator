@@ -1,0 +1,15 @@
+{
+  "name": "gemini_thinking_pro_js",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@google/genai": "^0.4.0",
+    "@google/generative-ai": "^0.24.0"
+  }
+}
