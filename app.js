@@ -1,24 +1,28 @@
 // Import the required modules
-import { Console } from "console";
-import fetch from "node-fetch"; // Ensure you have node-fetch installed (npm install node-fetch)
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from "fs"
-// Replace these placeholders with your actual values
-const API_ENDPOINT = "us-central1-aiplatform.googleapis.com";
-const PROJECT_ID = "saasvortex-dryrunproai"; // Replace with your project ID
-const LOCATION_ID = "us-central1";
-const MODEL_ID = "gemini-2.0-flash-thinking-exp-01-21"; // Flash Thinking Experimental Model
-const ACCESS_TOKEN = ""; // Replace with your OAuth token
 
-// Request payload
-const requestPayload = {
-  contents: [
-    {
-      role: "user",
-      parts: [
-        {
-          text: `
+// Replace with your actual API key
+const API_KEY = "";
 
-## Prompt: Generate an AI-Powered Actionable Insights Report for an E-commerce Merchant
+// Initialize the Google Generative AI client
+const genAI = new GoogleGenerativeAI(API_KEY);
+
+async function main() {
+  try {
+    // Specify the correct model name for Gemini 2.0 Flash Thinking Experimental
+    const modelName = "gemini-2.0-flash-thinking-exp";
+
+    // Get the generative model
+    const model = genAI.getGenerativeModel({ model: modelName });
+
+    // Define the input prompt in the correct format
+    const prompt = [
+      {
+        role: "user",
+        parts: [
+          {
+            text: `## Prompt: Generate an AI-Powered Actionable Insights Report for an E-commerce Merchant
 
 ### Context:
 
@@ -211,75 +215,38 @@ Follow the Following HTML Skeleton :
 
 <html lang=en><title>[Report Title]</title><style></style><div class=container><header>[INSERT Report Parameters Here]</header><section id=executive-summary><h2>Executive Summary</h2><p>[Executive Summary Content]</section><section id=Insights><h2>[INSIGHT SECTION TITLE 1]</h2>[INSIGHT SECTION CONTENT]......</section><section id=action-plan><h2>Action Plan</h2>[ACTION_PLAN_TABLE_PLACEHOLDER]</section><section id=competitive-benchmarking><h2>Competitive Benchmarking</h2><p>[Competitive Benchmarking Content]</section><section id=viq-agents><h2>Recommended VIQ Agents</h2><ul><li>[VIQ Agent Recommendation 1]<li>[VIQ Agent Recommendation 2]</ul></section><footer><p>[Report Generation Information]</footer></div>
 
-
-
-
-
-          `,
-        },
-      ],
-    },
-  ],
-  generationConfig: {
-    responseModalities: ["TEXT"],
-    temperature: 0.3,
-    maxOutputTokens: 8192,
-    topP: 0.95,
-  },
-};
-
-async function generateContent() {
-  try {
-    // Define the API URL
-    const url = `https://${API_ENDPOINT}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${MODEL_ID}:streamGenerateContent`;
-
-    // Make the POST request to the API
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${ACCESS_TOKEN}`, // Use your OAuth token here
+`,
+          },
+        ],
       },
-      body: JSON.stringify(requestPayload),
+    ];
+
+    // Generate content using the specified model
+    const result = await model.generateContent({
+      contents: prompt,
+      generationConfig: {
+        temperature: 0.3, // Adjust temperature for creativity
+        maxOutputTokens: 8000, // Limit output tokens as needed
+        topP: 0.95, // Adjust topP for randomness
+      },
     });
-
-    // Check if the response is successful
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    // Parse the response JSON
-    const data = await response.json();
-
-    // Extract and log the generated content
+    const data = await result.response.candidates;
+   
     extractGeneratedContent(data);
+    //console.log("Generated Text:", generatedText);
   } catch (error) {
     console.error("Error generating content:", error);
   }
 }
 
+
 function extractGeneratedContent(response) {
     let htmlContent='';
     try {
       if (Array.isArray(response)) {
-        //console.log(response)
-        response.forEach((item, index) => {
-          const candidates = item.candidates || [];
-          candidates.forEach((candidate, candidateIndex) => {
-            if (candidate.content.parts) {
-                htmlContent+= candidate.content.parts[0].text
-
-              console.log(
-                `Generated Content #${index + 1}.${candidateIndex + 1}:`,
-                candidate.content.parts[0].text
-
-              );
-            } else {
-               // console.log(candidate.content)
-              console.log(`Generated Content #${index + 1}.${candidateIndex + 1}: No content available.`);
-            }
-          });
-        });
+        let res = (response[0].content.parts[0].text)
+        fs.writeFileSync("generated_content.html", res, "utf8");
+        
       } else {
         console.log("Unexpected response format:", response);
       }
@@ -287,11 +254,9 @@ function extractGeneratedContent(response) {
       console.error("Error extracting content:", error);
     }
 
-    fs.writeFileSync("generated_content.html", htmlContent, "utf8");
+   
     console.log("HTML report has been successfully written to 'generated_content.html'.");
 
   }
-  
-
-// Call the function to generate content
-generateContent();
+// Run the main function
+main();
