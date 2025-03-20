@@ -4,223 +4,332 @@ import fs from "fs"
 
 // Replace with your actual API key
 const API_KEY = "";
-
-// Initialize the Google Generative AI client
 const genAI = new GoogleGenerativeAI(API_KEY);
+
+
+
+//Data 
+
+//profile - Generated For
+const generatedByProfiles = {
+  "EcommerceMerchant": {
+    "CompanyName": "Richer sounds",
+    "EcommercePlatform": "BigCommerce",
+    "TargetMarket": "europe"
+  },
+  "WebAgency": {
+    "AgencyName": "{__Agency Name__}",
+    "YearsInBusiness": "{__Years In business__}",
+    "ClientPortfolio": "{__Client Portfolio__}",
+    "EcommerceFocus": "{__Ecommerce Focus__}",
+    "TargetMarket": "{__Target Market__}",
+    "ServicesOffered": "{__Services Offered__}"
+  },
+  "EcommercePlatform": {
+    "EnterpriseMerchantName": "{__Enterprise Merchant Name__}",
+    "EcommerceFocus": "{__Ecommerce Focus__}"
+  }
+};
+  //Input Data From Opensearch
+const Inputdata = `Total No of Order:
+In Last 7 days: Average of 20 and Total of 139
+
+Total Sales:
+In Last 7 days: Average of £ 3,206.77 and Total of £ 22,447.37
+
+Number of orders with discount applied:
+In Last 7 days: Average of 1 and Total of 6
+
+Amount of Discount Used:
+In Last 7 days: Average of £ 16.72 and Total of £ 117.01
+
+Average Order Value:
+In Last 7 days: Average of £ 161.49 and Total of £ 161.49
+
+Total Shipping Cost:
+In Last 7 days: Average of £ 43.48 and Total of £ 304.39
+
+Total # of orders with Shipping > 0:
+In Last 7 days: Average of 9 and Total of 61
+
+Customer Registered:
+In Last 7 days: Average of 10 and Total of 67
+
+Customers Ordered:
+In Last 7 days: Average of 14 and Total of 100
+
+Refund number of orders:
+In Last 7 days: Average of 0 and Total of 2
+
+Refund Order Value:
+In Last 7 days: Average of £ 7.12 and Total of £ 49.86
+
+Number of orders Partially Refunded:
+In Last 7 days: Average of 0 and Total of 2
+
+Partially Refunded Order Value:
+In Last 7 days: Average of £ 7.12 and Total of £ 49.86
+
+Dates Mentioned In the Data : Today is 20/03/2025
+Last 7 days is (13/03/2025 - 20/03/2025)
+
+
+
+
+Dates Mentioned In the Data :
+
+Today is 18-03-2025
+Last 7 days is (11/03/2025 - 18/03/2025)
+`;
+//optional Fields Selections
+const optional_sections = 
+    
+    [
+      {
+        title: "Executive Summary",
+        description: "Summarise the report's purpose, highlighting the use of Vortex IQ’s AI Reasoning Model to derive insights and actionable recommendations.\n"
+      },
+      {
+        title: "Your Store KPIs",
+        description: "Convert the input data into a table with 2 columns: KPI Name, Last 7 days, summarizing values for each time period accordingly with Average and Total values in each cell with this format: Average: {Value}, Total: {Value}.\n"
+      },
+      {
+        title: "Competitive Benchmarking",
+        description: "For Benchmarking: Use what industry standard these days. Include relevant sections like Website Sales Performance, Pricing Analysis, Digital Shelf Performance, and any other sections you think are relevant to the data in the input data. Base your Benchmarking ONLY on the data provided. Do not include sections that are not relevant to the data provided and if there’s no relevant data provided for any sections below, omit the section from the report.\n"
+      }
+    ];
+
+
+
+
+
+
+    //Controls
+const desiredTitles =  ["Executive Summary","Competitive Benchmarking","Your Store KPIs"];
+const reportTitle = "Actionable Insights Report"
+const generatedBy = ["EcommerceMerchant"];
+const formattedProfiles = getFormattedProfiles(generatedBy);
+const challengesFacebyGB=`Drive adoption of all features, apps and cross / upsell to drive sales and operational efficiency.Slower site load times affecting conversions,High checkout abandonment rates, Need for AI-driven merchandising & personalisation, Optimising for mobile-first shopping experience, Implementing advanced SEO strategies for organic growth`
+const generatedFor =  "Web Developer - Web agency"
+const challengesFacebyGF = `Aligning client needs with AI-powered solutions. Ensuring seamless platform integrations and technical scalability, Improving client site speed and performance metrics.Meeting client deadlines without compromising on quality  `
+const selectedSections = getFormattedSections(desiredTitles);
+
+
+
+
+
+
+    function getFormattedSections(desiredTitles) {
+      return optional_sections
+        .filter(section => desiredTitles.includes(section.title))
+        .map(section => {
+          // Format title: Capitalize each word
+          const formattedTitle = section.title.replace(/\b\w/g, char => char.toUpperCase());
+    
+          // Format description: Capitalize first letter and ensure it ends with a period
+          let formattedDescription = section.description.trim();
+          if (!formattedDescription.endsWith('.')) {
+            formattedDescription += '.';
+          }
+          formattedDescription = formattedDescription.charAt(0).toUpperCase() + formattedDescription.slice(1);
+    
+          return `${formattedTitle}: ${formattedDescription}`;
+        });
+    }
+    function getFormattedProfiles(selectedProfileKeys) {
+      return selectedProfileKeys.map(profileKey => {
+        const profile = generatedByProfiles[profileKey];
+        if (!profile) return '';
+    
+        const formattedProfile = Object.entries(profile)
+          .map(([key, value]) => `- ${key.replace(/([A-Z])/g, ' $1').trim()} : ${value}`)
+          .join('\n');
+    
+        return `${profileKey.replace(/([A-Z])/g, ' $1').trim()}:\n${formattedProfile}`;
+      }).join('\n\n');
+    }
+    function extractGeneratedContent(response) {
+      let htmlContent = '';
+      try {
+        if (Array.isArray(response)) {
+          let res = response[0].content.parts[0].text;
+    
+          // Define the new styles
+          const newStyles = `
+            body {
+              font-family: Arial, sans-serif;
+              margin: 20px;
+              color: #333;
+        }
+            header {
+              text-align: left;
+              padding-bottom: 20px;
+              border-bottom: 2px solid #eee;
+            }
+            h1 {
+              color: #0056b3;
+              text-align: center;
+            }
+            h2 {
+              color: #0056b3;
+              margin-top: 25px;
+              margin-bottom: 10px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 15px;
+            }
+            th, td {
+              border: 1px solid #ddd;
+              padding: 8px;
+              text-align: left;
+            }
+            th {
+              background-color: #f4f4f4;
+              font-weight: bold;
+            }
+            .priority-high {
+              color: red;
+            }
+            .priority-medium {
+              color: orange;
+            }
+            .priority-low {
+              color: green;
+            }
+            footer {
+              margin-top: 30px;
+              padding-top: 10px;
+              border-top: 2px solid #eee;
+              text-align: center;
+              color: #777;
+              font-size: small;
+            }
+            ul {
+              list-style-type: square;
+              padding-left: 20px;
+            }
+          `;
+    
+          // Replace the contents of the <style> tag
+          res = res.replace(/<style>[\s\S]*?<\/style>/, `<style>${newStyles}</style>`);
+    
+          fs.writeFileSync("generated_content.html", res, "utf8");
+        } else {
+          console.log("Unexpected response format:", response);
+        }
+      } catch (error) {
+        console.error("Error extracting content:", error);
+      }
+    
+      console.log("HTML report has been successfully written to 'generated_content.html'.");
+    }
+
+
+
+
+
+
 
 async function main() {
   try {
     // Specify the correct model name for Gemini 2.0 Flash Thinking Experimental
     const modelName = "gemini-2.0-flash-thinking-exp";
-
     // Get the generative model
     const model = genAI.getGenerativeModel({ model: modelName });
-
     // Define the input prompt in the correct format
     const prompt = [
       {
         role: "user",
         parts: [
           {
-            text: `## Prompt: Generate an AI-Powered Actionable Insights Report for an E-commerce Merchant
+            text: `
+      ## Prompt: Generate an AI-Powered Actionable Insights Report for an E-commerce Merchant
+      ### Context:
+      We are using the Vortex IQ AI Insights Report Generator to create a detailed, data-driven report for an e-commerce merchant. The report should leverage all available data points, including sales performance, customer behavior, marketing insights, site performance, and operational metrics. The report is targeted at the Head of Ecommerce and aims to provide actionable recommendations to optimize business performance.
+      ### Report Parameters:
+      - Report Title: ${reportTitle}
+      - Report is Generated By : ${generatedBy}
+        Ecommerce Merchant Profile : 
+        ${formattedProfiles}
+      - Challenges Faced By ${generatedBy} :  ${challengesFacebyGB}
+      - Report is Generated For : ${generatedFor}
+      - Challenges Faced By ${generatedFor} : ${challengesFacebyGF}
 
-### Context:
+    ### Input Data : 
 
-We are using the Vortex IQ AI Insights Report Generator to create a detailed, data-driven report for an e-commerce merchant. The report should leverage all available data points, including sales performance, customer behavior, marketing insights, site performance, and operational metrics. The report is targeted at the Head of Ecommerce and aims to provide actionable recommendations to optimize business performance.
+      ${Inputdata}
 
-### Report Parameters:
-- Report Title: Actionable Insights Report
-- Industry: Shop TV, hi-fi, home cinema and more at Richer Sounds. We offer expert advice and lowest prices guaranteed. Visit us in store or shop online now
-- E-commerce Platform: Bigcommerce
-- Date Range of Data Used : {Last Year}
-- Report is Generated By : E-commerce Merchant
-- Challenges Faced By E-commerce Merchant : Drive adoption of all features, apps and cross / upsell Feedonomics to drive sales and operational efficiency, Slower site load times affecting conversions
-- Report is Generated For : Web Developer - Web agency 
-- Challenges Faced By Web Developer - Web agency : Ensuring Seamless platform integrations and technical scalability. 
-- Report Purpose : Generate an AI-powered insights report, to improve the sales report
+    ### Required Sections:
 
-### Input Data : 
-
-
- 
-Total Number of Orders : 
-In Last 7 days :  Average of 21 and Total of 145
-In Last 30 days  : Average of 23 and Total of 608
-In Last 12 months : Average of 25 and Total of 9126
-
-Total Sales  : 	      
-In Last 7 days : Average of  $2521.47 and Total of $17650.26
-In Last 30 days :  Average of $2894.16  and Total of $86824.86
-In Last 12 months : Average of $3597.71  and Total of $1313163.60
-
-Number of Orders With discount  :
-In Last 7 days : Average of 1 and Total of 4		       
-In Last 30 days : Average of 1 and Total of  27
-In Last 12 months:  Average of 1 and Total of 412
-
-Amount of Discount Used : 
- In Last 7 days  Average of $4.09 and Total of $28.63
-In Last 30 days : Average of $13.70 and Total of $410.88
-In Last 12 months : Average of $28.64 and Total of $10454.34
-
-Average Order Value:      
-In Last 7 days : Average of $121.73 and Total of $121.73
-In Last 30 days : Average of $124.39 and Total of $124.39
-In Last 12 months : Average of $143.89 and Total of $143.89
-
-Total Shipping Cost :      
- In Last 7 days : Average of $57.73 and Total of $404.10
-In Last 30 days : Average of $65.37 and Total of $1961.21
-In Last 12 months : Average of $70.20 and Total of $25623.06
-
-
-Total Number of Orders with Shipping > 0 : 
-In Last 7 days :  Average of 11 and Total of 77
-In Last 30 days : Average of 13 and Total of 385
- In Last 12 months : Average of 14 and Total of 4,942
-
-Customers Registered
-In Last 7 days : Average of 11 and Total of 78
-In Last 30 days : Average of 11 and Total of 346
-In Last 12 months: Average of 5 and Total of 1,809
-
-Customers Ordered
-In Last 7 days : Average of 14 and Total of 100
-In Last 30 days : Average of 14 and Total of 429
-In Last 12 months : Average of 6 and Total of 2,352
-
-Refund Number of Orders
-In Last 7 days : Average of 0 and Total of 1
-In Last 30 days : Average of 0 and Total of 12
-In Last 12 months : Average of 1 and Total of 256
-
-Refund Order Value
-In Last 7 days Average of $1.42 and Total of $9.95
-In Last 30 days : Average of $23.76 and Total of $712.73
-In Last 12 months : Average of $54.66 and Total of $20,059.43
-
-Number Of Orders Partially Refunded
-In Last 7 days: Average of 0 and Total of 1
-In Last 30 days : Average of 0 and Total of 4
-In Last 12 months : Average of 0 and Total of 159
-
-
-Partially Refunded Order Value
-In Last 7 days : Average of $1.42 and Total of $9.95
-In Last 30 days : Average of $4.31 and Total of $129.20
-In Last 12 months : Average of $23.77 and Total of $8,677.11
-
-Number of Declined/Payment Failed Orders
-In Last 7 days : Average of 1 and Total of 6
-In Last 30 days : Average of 1 and Total of 23
-In Last 12 months : Average of 1 and Total of 214
-
-Amount for the Failed Orders
-In Last 7 days : Average of $135.51 and Total of $948.54
-In Last 30 days : Average of $100.84 and Total of $3,025.28
-In Last 12 months : Average of $106.10 and Total of $38,728.26
+        1. Report Parameters: Include Company name, Industry, Who is it Generated For and Generated By (Do not Include Challenges and Profiles)
+        
+        2. Action Plan - AI-Powered Recommendations:
+        Create 9 tables based on the Effort vs. Impact Analysis framework. 
+        Each table corresponds to one of the following categories: High Impact-Low Effort, High Impact-Medium Effort, High Impact-High Effort, Medium Impact-Low Effort, Medium Impact-Medium Effort, Medium Impact-High Effort, Low Impact-Low Effort, Low Impact-Medium Effort, and Low Impact-High Effort.
+        For each table:
+        Include rows only if there is sufficient input data to support actionable recommendations.
+        For Recommendations, It should be supported by Input Data
+        Use the following columns: Action, Priority, Effort Level, Impact Level, and Expected Uplift.
+        In  Expected Uplift (Mention Expected Uplift Percentage and Expected Revenue)
+        If no data supports recommendations for a category, state 'None' in All columns .
+        Base all recommendations solely on the provided data and consider challenges faced by stakeholders.
 
 
 
-Dates Mentioned In the Data :
-
-Today is 17-03-2025
-Last 7 days is (10-03-2025  - 17-03-2025 )
-Last 30 days is  (15–02–2025 - 17–03–2025)
-Last 12 months is (17–03–2024 - 17–03–2025)
-
-### Required Sections:
-
-1. Report Parameters: Include Company name, Industry, Who is it Generated For and Generated By(Do not Include Challenges), Date Range the Data Used For analysis.
-
-2. Executive Summary : Summarise the report's purpose, highlighting the use of Vortex IQ’s AI Reasoning Model to derive insights and actionable recommendations.
-
-3. Your Store KPIs : 
-Convert the Input  data into a table with four columns: KPI Name, 7 Days, 30 Days, and 12 Months, summarizing values for each time period accordingly With Average And total values in each Cell With this Format :
-Average : {Value}, Total {Value}
 
 
+    ### Optional Sections to Include if User Selects: 
 
-4. Action Plan - AI-Powered Recommendations:
+        ${selectedSections}
 
-Create 9 tables based on the Effort vs. Impact Analysis framework. 
+    ### Formatting & Presentation:
 
-Each table corresponds to one of the following categories: High Impact-Low Effort, High Impact-Medium Effort, High Impact-High Effort, Medium Impact-Low Effort, Medium Impact-Medium Effort, Medium Impact-High Effort, Low Impact-Low Effort, Low Impact-Medium Effort, and Low Impact-High Effort.
+        - Include all ${(desiredTitles.length ) + 3} sections mentioned in this order  : Header , Action Plan, ${desiredTitles}, Conclusion    
+        - Use a professional and clean layout, incorporating charts and tables where applicable.
+        - The report is for : Web Developer - Web Agency. Use the insights, Report, Recommendations accordingly. 
+        - No Hallucinations, Ground the report with the data you’ve been provided. 
 
-For each table:
+    ### Tone & Style:
 
-Include rows only if there is sufficient input data to support actionable recommendations.
-For Recommendations, It should be supported by Input Data
-Use the following columns: Action, Priority, Effort Level, Impact Level, and Expected Uplift.
-If no data supports recommendations for a category, state 'None' for that table.
-Base all recommendations solely on the provided data and consider challenges faced by stakeholders.
+        - Maintain a professional and data-driven tone, suitable for Web Developer - Web Agency.
+        - Ensure the report is easy to navigate, with clear headings and section dividers.
+        - Use bullet points and short paragraphs to enhance readability.
+        - Align the headings on the left
 
+    ### Output Format:
 
-5.Competitive Benchmarking: 
-For Benchmarking :  Use what industry standard these days.
-Include Relevant Sections like : Website Sales Performance, Pricing Analysis, Digital Shelf Performance and any other sections you think it’s relevant to the data in the input data. 
-Base your Benchmarking ONLY On the data provided. Do not Include sections that are not relevant to the data provided and If there’s no relevant data provided for any sections below, omit the section from the report 
-
-
-
-6 Recommended VIQ Agents : 
-VIQ Agents are AI Agents, available to use on an ecommerce site to improve sales 
-Analyse the Recommendation above and Suggest ONLY the Selective agents to Improve their sales.
-Agent 1 - Image Optimizer: Automates image optimisation using the BigCommerce storefront API.
-Agent 2 - SEO Analyzer : Analyse and update SEO elements using APIs. 
-Agent 3 - On-Page SEO Category :Improve category titles, descriptions, Page Title, Meta Keywords, Meta Description, Search Keywords. 
-Agent 4 - On-Page SEO Product : Improve product titles, descriptions, Page Title, Meta Keywords, Meta Description, Search Keywords.
-Agent 5 - Keyword Analyzer : Perform keyword analysis and suggest enhancements.
-
-7. Conclusion :
-- End the report with: "Report generated by: BigCommerce - Powered by Vortex IQ - Insights AI Agent" 
-Date : {Todays Date}
+        Generate the report in HTML format, mimicking a Word document/PDF layout. Follow these guidelines:
+      - Use only valid HTML
+      - Start with an <html> tag and end with a </html> tag
+      - Use proper HTML nesting for readability
+      - Include <style> Tag with Zero CSS. Do not Include CSS of any Sorts
+      - Do not include header or footer content
+      - Do not Add Colors of any sorts
 
 
+    ### Additional Instructions:
 
-### Formatting & Presentation:
-- 
-- Include all 6 sections mentioned :Header , Executive Summary, Insights (Sections Only Relevant to data),Action Plan(as a table,Competitive Benchmarking, Recommended VIQ Agents, Conclusion    
-- Use a professional and clean layout, incorporating charts and tables where applicable.
-- The report is for : Web Developer - Web Agency. Use the insights, Report, Recommendations accordingly. 
-- No Hallucinations, Ground the report with the data you’ve been provided. 
-- When you interpret Elasticsearch Data, DO NOT include words like bucket count,index name. Interpret the data without getting technical.
-
-### Tone & Style:
-- Maintain a professional and data-driven tone, suitable for senior e-commerce leadership.
-- Ensure the report is easy to navigate, with clear headings and section dividers.
-- Use bullet points and short paragraphs to enhance readability.
-- Align the headings on the left
-
-### Output Format:
-Generate the report in HTML format, mimicking a Word document/PDF layout. Follow these guidelines:
-- Use only valid HTML
-- Start with an <html> tag and end with a </html> tag
-- Use proper HTML nesting for readability
-- Do not include header or footer content
-- Center the title "Website Improvements"
-- Strictly no CSS
-- Avoid Using Style Tags / CSS
+      - Use the provided data points and insights to ensure the final output is highly actionable and tailored to the Head of E-commerce's role.
+      - Include specific metrics from the dataset in recommendations.
+      - Do not include a section that’s Irrelevant to the data.
+      - Follow UK Date Format, for all the dates in the report. For Example : 20-FEB-2025
 
 
+    ### HTML Skeleton : 
 
-### Additional Instructions:
-- Use the provided data points and insights to ensure the final output is highly actionable and tailored to the Head of E-commerce's role.
-- Include specific metrics from the dataset in recommendations.
-- Do not include a section that’s Irrelevant to the data.
-
-### HTML Skeleton : 
-
-Follow the Following HTML Skeleton : 
-
-<html lang=en><title>[Report Title]</title><style></style><div class=container><header>[INSERT Report Parameters Here]</header><section id=executive-summary><h2>Executive Summary</h2><p>[Executive Summary Content]</section><section id=Insights><h2>[INSIGHT SECTION TITLE 1]</h2>[INSIGHT SECTION CONTENT]......</section><section id=action-plan><h2>Action Plan</h2>[ACTION_PLAN_TABLE_PLACEHOLDER]</section><section id=competitive-benchmarking><h2>Competitive Benchmarking</h2><p>[Competitive Benchmarking Content]</section><section id=viq-agents><h2>Recommended VIQ Agents</h2><ul><li>[VIQ Agent Recommendation 1]<li>[VIQ Agent Recommendation 2]</ul></section><footer><p>[Report Generation Information]</footer></div>
+        Follow the Following HTML Skeleton :
+        <!doctypehtml><html lang=en><meta charset=UTF-8><meta content="width=device-width,initial-scale=1"name=viewport><title>[Report Title]</title><style>/**DO NOT APPLY CSS**/</style><div class=container><header>[INSERT Report Parameters Here]</header>
+        <section id=section-namey><h2>section name</h2><p>[Section Content]</section>
+        <footer><p>[Report Generation Information]</footer></div>
 
 `,
           },
         ],
       },
     ];
-
+    console.log(prompt[0].parts[0].text);
     // Generate content using the specified model
     const result = await model.generateContent({
       contents: prompt,
@@ -240,23 +349,6 @@ Follow the Following HTML Skeleton :
 }
 
 
-function extractGeneratedContent(response) {
-    let htmlContent='';
-    try {
-      if (Array.isArray(response)) {
-        let res = (response[0].content.parts[0].text)
-        fs.writeFileSync("generated_content.html", res, "utf8");
-        
-      } else {
-        console.log("Unexpected response format:", response);
-      }
-    } catch (error) {
-      console.error("Error extracting content:", error);
-    }
 
-   
-    console.log("HTML report has been successfully written to 'generated_content.html'.");
-
-  }
 // Run the main function
 main();
